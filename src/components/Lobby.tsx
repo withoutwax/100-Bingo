@@ -18,7 +18,7 @@ const Lobby: React.FC<any> = ({ location }) => {
     return (
         <main className="lobby-container">
 
-            <AvailableRooms />
+            <AvailableRooms username={username}/>
 
             <section className="lobby-create-room">
                 <h2>방 만들기</h2>

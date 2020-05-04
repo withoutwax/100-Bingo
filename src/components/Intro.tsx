@@ -1,14 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 
 import { Link } from 'react-router-dom';
 
 const Intro: React.FC = () => {
     const [username, setUsername] = useState('Anonymous');
-    // const SERVER_URL = 'http://localhost:4000/';
 
-    useEffect(() => {
-        // socket = io(SERVER_URL);
-    });
+    const storeUsername = (e: any) => {
+        localStorage.setItem( 'username', username );
+    }
 
     return (
         <main className="intro-container">
@@ -25,7 +24,7 @@ const Intro: React.FC = () => {
                     onChange={(event) => setUsername(event.target.value)}
                     required
                 />
-                <Link onClick={e => (!username) ? e.preventDefault() : null} to={ `/lobby?username=${username}` }>
+                <Link onClick={e => (!username) ? e.preventDefault() : storeUsername(e)} to={ `/lobby?username=${username}` }>
                     <button type="submit" className="btn">게임 하기</button>
                 </Link>
 			</section>
