@@ -1,6 +1,11 @@
 import React, { useState, useEffect }from 'react';
 import { Link } from 'react-router-dom';
-import { socket } from '../service/socket';
+// import { socket } from '../service/socket';
+
+import io from 'socket.io-client';
+const SOCKET_URL = 'http://localhost:4000/';
+
+const socket = io(SOCKET_URL);
 
 interface AvailableRoomsProps {
     username: string
@@ -10,18 +15,25 @@ const AvailableRooms: React.FC<AvailableRoomsProps> = (props) => {
     const [availableRooms, setAvailableRooms] = useState<any[]>([]);
 
     useEffect(() => {
-        console.log('efeg');
         // socket.emit('roomList');
-        console.log(availableRooms.length);
+        // socket.open();
+        console.log(availableRooms, availableRooms.length);
         if (availableRooms.length === 0) {
             console.log('There are no rooms!');
             socket.emit('roomList');
         }
-
         socket.on('receiveRoomList', (roomList: any) => {
             console.log(roomList);
-            setAvailableRooms(roomList => [...roomList, roomList]);
+            setAvailableRooms(roomList);
         });
+        
+        // return () => {
+        //     socket.close();
+        // }
+    }, []);
+
+    useEffect(() => {
+        
     });
 
     return (

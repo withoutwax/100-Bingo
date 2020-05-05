@@ -7,7 +7,7 @@ import Lobby from './components/Lobby';
 import Game from './components/Game';
 
 // const SocketContext = React.createContext();
-let socket;
+// let socket;
 
 const App: React.FC = () => {
   

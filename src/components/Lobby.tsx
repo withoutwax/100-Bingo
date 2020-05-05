@@ -11,8 +11,6 @@ const Lobby: React.FC<any> = ({ location }) => {
     useEffect(() => {
         const { username } = queryString.parse(location.search);
         setUsername(username);
-        // socket = io(SERVER_URL);
-        // setUsername(username)
     });
 
     return (
