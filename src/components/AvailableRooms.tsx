@@ -15,8 +15,7 @@ const AvailableRooms: React.FC<AvailableRoomsProps> = (props) => {
     const [availableRooms, setAvailableRooms] = useState<any[]>([]);
 
     useEffect(() => {
-        // socket.emit('roomList');
-        // socket.open();
+
         console.log(availableRooms, availableRooms.length);
         if (availableRooms.length === 0) {
             console.log('There are no rooms!');
@@ -32,10 +31,6 @@ const AvailableRooms: React.FC<AvailableRoomsProps> = (props) => {
         // }
     }, []);
 
-    useEffect(() => {
-        
-    });
-
     return (
         <section>
             <h2>Join Room</h2>
@@ -45,7 +40,7 @@ const AvailableRooms: React.FC<AvailableRoomsProps> = (props) => {
                         <div>{room.name}</div>
                     </Link>
                 ))}
-                ... No room to join
+                {availableRooms.length === 0 ? `... No room to join` : ''}
             </div>
         </section>
     );
