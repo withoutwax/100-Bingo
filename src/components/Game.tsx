@@ -11,7 +11,7 @@ const socket = io(SOCKET_URL);
 const Game: React.FC<any> = ({ location }) => {
     const [username, setUsername] = useState<any>('');
     const [room, setRoom] = useState<any>('');
-    const [userLists, setUserLists] = useState<any[]>([]);
+    const [readyButtonState, setreadyButtonState] = useState<boolean>(false);
     
     useEffect(() => {
         const { username, room } = queryString.parse(location.search);
@@ -26,29 +26,26 @@ const Game: React.FC<any> = ({ location }) => {
         }
     }, ['http://localhost:4000/', location.search]);
 
-    useEffect(() => {
-        socket.on('roomUsers', ({ room, users }:{room: any, users: any}) => {
-            console.log('Room Name:', room);
-            console.log('List of Users:', users);
-
-            setUserLists(users);
-        });
-    }, []);
+    const playerReady = (e: any) => {
+        console.log('Player Ready', e);
+        setreadyButtonState(true);
+        socket.emit('playerReady', { username });
+    }
 
     return (
         <main className="game-container">
             <h1>Welcome to {room} Room</h1>
 
-            <GamePlayerList userLists={userLists} />
+            <GamePlayerList socket={socket} />
 
             <section className="game-100-bingo-container">
                 <div className="game-100-bingo"></div>
                 {/* <button onclick="generateTable()">Generate Table</button> */}
-                <label>User Input: </label>
-                <input className="game-100-bingo-select-number" disabled/>
+                {/* <label>User Input: </label>
+                <input className="game-100-bingo-select-number" disabled/> */}
                 <p className="game-100-bingo-select-number-value">Current</p>
                 <p className="game-100-bingo-player-turn">Player Turn: <span className="game-100-bingo-current-player"></span></p>
-                {/* <button type="submit" className="game-100-bingo-player-ready" onClick="playerReady()">Ready!</button> */}
+                <button type="submit" onClick={playerReady} disabled={readyButtonState}>Ready!</button>
                 <p className="game-100-bingo-player-winner"></p>
             </section>
         </main>

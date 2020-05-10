@@ -25,10 +25,6 @@ const AvailableRooms: React.FC<AvailableRoomsProps> = (props) => {
             console.log(roomList);
             setAvailableRooms(roomList);
         });
-        
-        // return () => {
-        //     socket.close();
-        // }
     }, []);
 
     return (

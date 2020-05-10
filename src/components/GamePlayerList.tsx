@@ -7,17 +7,34 @@ import React, { useState, useEffect} from 'react';
 // const socket = io(SOCKET_URL);
 
 interface GamePlayerListProps {
-    userLists: any[];
+    socket: any;
 }
 
-const GamePlayerList: React.FC<GamePlayerListProps> = ({ userLists }) => {
-    console.log(userLists);
+const GamePlayerList: React.FC<GamePlayerListProps> = ({ socket }) => {
+    const [userLists, setUserLists] = useState<any[]>([]);
+    const [readyUser, setReadyUser] = useState<string[]>([]);
+
+    useEffect(() => {
+        socket.on('roomUsers', ({ room, users }:{room: any, users: any}) => {
+            console.log('Room Name:', room);
+            console.log('List of Users:', users);
+
+            setUserLists(users);
+        });
+
+        socket.on('updatePlayerReady', ( readyUsername : string) => {
+            console.log('Who is ready?', readyUsername);
+            
+            setReadyUser(readyUser => [...readyUser, readyUsername]);
+        });
+    }, []);
+
     return (
         <section>
             <p>Current Players:</p>
             <ul className="game-playerlist">
                 {userLists.map((user, index) => (
-                    <li key={index}>{user.username}</li>
+                    <li key={index}>{user.username}<span>{readyUser.includes(user.username) ? ' - Ready!' : ''}</span></li>
                 ))}
             </ul>
         </section>
