@@ -2,6 +2,7 @@ import React, { useState, useEffect} from 'react';
 import queryString from 'query-string';
 // import { socket } from '../service/socket';
 import GamePlayerList from './GamePlayerList';
+import GameBoard from './GameBoard';
 import io from 'socket.io-client';
 const SOCKET_URL = 'http://localhost:4000/';
 
@@ -37,6 +38,8 @@ const Game: React.FC<any> = ({ location }) => {
             <h1>Welcome to {room} Room</h1>
 
             <GamePlayerList socket={socket} />
+
+            <GameBoard />
 
             <section className="game-100-bingo-container">
                 <div className="game-100-bingo"></div>
