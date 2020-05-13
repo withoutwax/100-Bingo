@@ -6,19 +6,25 @@ const GameBoard: React.FC = () => {
     useEffect(() => {
         const columnCount = 3;
         const rowCount = 3;
+        let counter = 1;
         
         for (let i = 0; i < rowCount; i++) {
 
             let columnElement: any[] = [];
             for (let j = 0; j < columnCount; j++) {
                 console.log(columnElement);
-                columnElement.push(j);
+                columnElement.push(counter);
+                counter += 1;
             }
 
             setTableElement(tableElement => [...tableElement, columnElement]);
         }
-
     }, []);
+
+    const updateTable = (e: any) => {
+        console.log('Target ID:', e.target.id);
+        e.target.innerHTML = '😍';
+    }
     
     console.log(tableElement);
     return (
@@ -29,7 +35,7 @@ const GameBoard: React.FC = () => {
                     {tableElement.map((column: any, index: number) => (
                         <tr key={index}>
                             {column.map((item: string, index: number) => (
-                                <td key={index}>{item}</td>
+                                <td onClick={updateTable} key={index} id={item}>{item}</td>
                             ))}
                         </tr>
                     ))}
