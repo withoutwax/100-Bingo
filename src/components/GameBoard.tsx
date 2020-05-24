@@ -6,18 +6,21 @@ interface GameBoardProps {
     username: string;
     room: string;
     gameOver: ((winner: string) => void);
+    gameStart: boolean;
+    gameReset: any;
+    gameResetFunction: (() => void);
 }
 interface tableElementMap {
     index: number;
     value: string;
     toggleEdit: boolean;
+    selected: boolean;
 }
 
 const GameBoard: React.FC<GameBoardProps> = (props) => {
     const [tableElement, setTableElement] = useState<Array<Array<tableElementMap>>>([]);
     const [chooseNumberArray, setChooseNumberArray] = useState<string[]>([]);
     const [totalTableElement, setTotalTableElement] = useState<number>(0);
-    const [checkedTableElement, setCheckedTableElement] = useState<number>(1);
 
     useEffect(() => {
         const columnCount = 3;
@@ -28,11 +31,11 @@ const GameBoard: React.FC<GameBoardProps> = (props) => {
 
             let columnElement: Array<tableElementMap> = [];
             for (let j = 0; j < columnCount; j++) {
-                // console.log(columnElement);
                 const element = {
                     index: counter,
                     value: String(counter),
-                    toggleEdit: false
+                    toggleEdit: false,
+                    selected: false
                 };
                 columnElement.push(element);
                 counter += 1;
@@ -41,34 +44,57 @@ const GameBoard: React.FC<GameBoardProps> = (props) => {
             setTableElement(tableElement => [...tableElement, columnElement]);
         }
 
-        // setTotalTableElement(counter);
-        setTotalTableElement(3); // TODO: Change this to counter
+        // setTotalTableElement(counter - 1);
+        setTotalTableElement(2);
     }, []);
 
     useEffect(() => {
-        // console.log('Props', props.chooseNumber);
-        if (props.chooseNumber != undefined && !chooseNumberArray.includes(props.chooseNumber)) {
+        console.log('Game Reset Setting:', props.gameReset);
+        if (props.gameReset !== false) {
+            setTableElement([]);
+            setChooseNumberArray([]);
+            setTotalTableElement(0);
+
+            props.gameResetFunction();
+            console.log('Game has resetted');
+        }
+        if (props.chooseNumber !== undefined && !chooseNumberArray.includes(props.chooseNumber)) {
             setChooseNumberArray(chooseNumberArray => [...chooseNumberArray, props.chooseNumber]);
         }
-        console.log(chooseNumberArray.length, totalTableElement);
-        if (checkedTableElement != 0 && totalTableElement != 0 && chooseNumberArray.length === totalTableElement) {
-            // props.gameOver(props.username);
+
+        // Check if all the elements are selected
+        let selectedElement = 0;
+        if (tableElement.length > 0) {
+            for (let i = 0; i < 3; i++) {
+                for (let j = 0; j < 3; j++) {
+                    if (tableElement[i][j].selected) {
+                        selectedElement += 1;
+                    }   
+                }
+            }
+        }
+
+        // console.log(selectedElement, totalTableElement);
+        if (selectedElement != 0 && totalTableElement != 0 && selectedElement === totalTableElement) {
+            props.gameOver(props.username);
         }
     });
 
-    const numberCheck = (data: tableElementMap): string => {
+    const numberCheck = (i: number, j: number, data: tableElementMap): string => {
         if (chooseNumberArray.includes(data.value)) {
-            // setCheckedTableElement(checkedTableElement + 1);
+            tableElement[i][j].selected = true;
             return 'red'
         } else {
             return 'white';
         }
     };
     const enableEdit = (i: number, j: number) => {
-        let tableElementUpdate = [...tableElement];
-        tableElementUpdate[i][j].toggleEdit = true;
-
-        setTableElement(tableElementUpdate);
+        if (!props.gameStart) {
+            let tableElementUpdate = [...tableElement];
+            tableElementUpdate[i][j].toggleEdit = true;
+    
+            setTableElement(tableElementUpdate);
+        }
     };
     const saveNumber = (i: number, j: number, number: string) => {
         let tableElementUpdate = [...tableElement];
@@ -91,8 +117,6 @@ const GameBoard: React.FC<GameBoardProps> = (props) => {
             </div>
         );
     };
-    
-    // console.log(tableElement);
     return (
         <main className="gameboard-container">
 
@@ -101,12 +125,11 @@ const GameBoard: React.FC<GameBoardProps> = (props) => {
                     {tableElement.map((column: any, i: number) => (
                         <tr key={i}>
                             {column.map((item: tableElementMap, j: number) => (
-                                <td> 
+                                <td key={item.index}> 
                                     <div
                                         onClick={() => (enableEdit(i, j))} 
-                                        key={item.index} 
                                         id={String(item.index)}
-                                        style={{backgroundColor: numberCheck(item)}}
+                                        style={{backgroundColor: numberCheck(i, j, item)}}
                                     >{item.toggleEdit ? null : item.value}</div>
                                     <div>{item.toggleEdit ? inputElement(i, j) : null}</div>
                                 </td>

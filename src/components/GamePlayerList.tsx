@@ -2,9 +2,10 @@ import React, { useState, useEffect} from 'react';
 
 interface GamePlayerListProps {
     socket: any;
+    winner: string;
 }
 
-const GamePlayerList: React.FC<GamePlayerListProps> = ({ socket }) => {
+const GamePlayerList: React.FC<GamePlayerListProps> = ({ socket, winner }) => {
     const [userLists, setUserLists] = useState<any[]>([]);
     const [readyUser, setReadyUser] = useState<string[]>([]);
 
@@ -28,7 +29,10 @@ const GamePlayerList: React.FC<GamePlayerListProps> = ({ socket }) => {
             <p>Current Players:</p>
             <ul className="game-playerlist">
                 {userLists.map((user, index) => (
-                    <li key={index}>{user.username}<span>{readyUser.includes(user.username) ? ' - Ready!' : ''}</span></li>
+                    <li key={index}>{user.username}
+                        <span>{readyUser.includes(user.username) ? ' - Ready!' : ''}</span>
+                        <span>{winner === user.username ? ' is a WINNER!' : ''}</span>
+                    </li>
                 ))}
             </ul>
         </section>
