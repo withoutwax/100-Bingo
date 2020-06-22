@@ -1,40 +1,58 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import queryString from 'query-string';
+import { db } from '../service/firestore';
 
 import AvailableRooms from './AvailableRooms';
 
-const Lobby: React.FC<any> = ({ location }) => {
-    const [username, setUsername] = useState<any>('Anonymous');
-    const [room, setRoom] = useState<string>('');
+interface gameDataProps {
+	gameData: any;
+	updateRoomGlobal: any;
+}
 
-    useEffect(() => {
-        const { username } = queryString.parse(location.search);
-        setUsername(username);
-    });
+const Lobby: React.FC<gameDataProps> = (props) => {
+	const [username, setUsername] = useState<string>('Anonymous');
+	const [createNewRoom, setCreateNewRoom] = useState<string>('') 
 
-    return (
-        <main className="lobby-container">
+	useEffect(() => {
+		setUsername(props.gameData.username);
+	});
 
-            <AvailableRooms username={username}/>
+	const updateNewRoomTitle = () => {
+		// Create a new room
+		db.collection('rooms').doc().set({
+			roomName: createNewRoom,
+			numOfPlayers: 0,
+			players: []
+		});
 
-            <section className="lobby-create-room">
-                <h2>방 만들기</h2>
-                <label >Room Name</label>
-                <input 
-                    type="text"
-                    name="room"
-                    id="room"
-                    placeholder="Create a New Room"
-                    onChange={(event) => setRoom(event.target.value)}
-                    required
-                />
-                <Link onClick={e => (!username || !room) ? e.preventDefault() : null} to={ `/game?username=${username}&room=${room}` }>
-                    <button type="submit" className="btn">방 만들기</button>
-                </Link>
-            </section>
-        </main>
-    );
+		// Update a global room variable
+		props.updateRoomGlobal(createNewRoom);
+	}
+
+	return (
+		<main className="lobby-container">
+			<section>
+			<h2>Current User: <span>{username}</span></h2>
+			</section>
+			<AvailableRooms gameData={props.gameData} updateRoomGlobal={props.updateRoomGlobal}/>
+
+			<section className="lobby-create-room">
+				<h2>방 만들기</h2>
+				<label >Room Name</label>
+				<input 
+					type="text"
+					name="room"
+					id="room"
+					placeholder="Create a New Room"
+					onChange={(event) => setCreateNewRoom(event.target.value)}
+					required
+				/>
+				<Link onClick={e => (!username) ? e.preventDefault() : null} to={ `/game&room=${createNewRoom}` }>
+					<button type="submit" className="btn" onClick={updateNewRoomTitle} >방 만들기</button>
+				</Link>
+			</section>
+		</main>
+	);
 }
 
 export default Lobby;

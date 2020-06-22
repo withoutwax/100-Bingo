@@ -1,12 +1,17 @@
 import React, { useState } from 'react';
-
 import { Link } from 'react-router-dom';
 
-const Intro: React.FC = () => {
+interface gameDataProps {
+    gameData: object;
+    updateUsernameGlobal: any;
+}
+
+const Intro: React.FC<gameDataProps> = (props) => {
     const [username, setUsername] = useState('Anonymous');
 
     const storeUsername = (e: any) => {
         localStorage.setItem( 'username', username );
+        props.updateUsernameGlobal(username);
     }
 
     return (
@@ -24,7 +29,7 @@ const Intro: React.FC = () => {
                     onChange={(event) => setUsername(event.target.value)}
                     required
                 />
-                <Link onClick={e => (!username) ? e.preventDefault() : storeUsername(e)} to={ `/lobby?username=${username}` }>
+                <Link onClick={e => (!username) ? e.preventDefault() : storeUsername(e)} to={ `/lobby` }>
                     <button type="submit" className="btn">게임 하기</button>
                 </Link>
 			</section>
