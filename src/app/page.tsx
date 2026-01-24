@@ -1,11 +1,13 @@
-import { useEffect, useState } from "react";
-import { useSocket } from "./context/SocketContext";
-import Lobby from "./components/Lobby";
-import SetupBoard from "./components/SetupBoard";
-import GameBoard from "./components/GameBoard";
-import { GamePhase, RoomInfo } from "./types";
+"use client";
 
-function App() {
+import { useEffect, useState } from "react";
+import { useSocket } from "../context/SocketContext";
+import Lobby from "../components/Lobby";
+import SetupBoard from "../components/SetupBoard";
+import GameBoard from "../components/GameBoard";
+import { GamePhase, RoomInfo } from "../types";
+
+export default function Home() {
   const { socket, connected } = useSocket();
   const [phase, setPhase] = useState<GamePhase>("LOBBY");
   const [myId, setMyId] = useState<string>("");
@@ -147,5 +149,3 @@ function App() {
     </div>
   );
 }
-
-export default App;
