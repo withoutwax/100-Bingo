@@ -1,146 +1,146 @@
-import React, { useState, useEffect, FunctionComponent } from 'react';
-import { socket } from '../service/socket';
+import React from "react";
+import { useSocket } from "../context/SocketContext";
+import { Player } from "../types";
+import clsx from "clsx";
 
 interface GameBoardProps {
-    chooseNumber: string;
-    username: string;
-    room: string;
-    gameOver: ((winner: string) => void);
-    gameStart: boolean;
-    gameReset: any;
-    gameResetFunction: (() => void);
-}
-interface tableElementMap {
-    index: number;
-    value: string;
-    toggleEdit: boolean;
-    selected: boolean;
+  board: number[];
+  selectedNumbers: number[];
+  turnPlayerId: string;
+  myId: string;
+  players: Player[];
+  roomId: string;
 }
 
-const GameBoard: React.FC<GameBoardProps> = (props) => {
-    const [tableElement, setTableElement] = useState<Array<Array<tableElementMap>>>([]);
-    const [chooseNumberArray, setChooseNumberArray] = useState<string[]>([]);
-    const [totalTableElement, setTotalTableElement] = useState<number>(0);
+const GameBoard: React.FC<GameBoardProps> = ({
+  board,
+  selectedNumbers,
+  turnPlayerId,
+  myId,
+  players,
+  roomId,
+}) => {
+  const { socket } = useSocket();
+  const isMyTurn = turnPlayerId === myId;
+  const currentTurnPlayer = players.find((p) => p.id === turnPlayerId);
 
-    useEffect(() => {
-        const columnCount = 3;
-        const rowCount = 3;
-        let counter = 1;
-        
-        for (let i = 0; i < rowCount; i++) {
+  const handleSelect = (num: number) => {
+    if (!isMyTurn || selectedNumbers.includes(num)) return;
+    socket?.emit("select_number", { roomId, number: num });
+  };
 
-            let columnElement: Array<tableElementMap> = [];
-            for (let j = 0; j < columnCount; j++) {
-                const element = {
-                    index: counter,
-                    value: String(counter),
-                    toggleEdit: false,
-                    selected: false
-                };
-                columnElement.push(element);
-                counter += 1;
-            }
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen bg-slate-900 text-white p-4">
+      <div className="w-full max-w-5xl grid lg:grid-cols-[1fr_300px] gap-8">
+        {/* Main Game Area */}
+        <div className="flex flex-col items-center">
+          {/* Status Header */}
+          <div className="mb-8 text-center">
+            <h2
+              className={clsx(
+                "text-3xl font-bold mb-2",
+                isMyTurn
+                  ? "text-green-400 scale-110 transition-transform"
+                  : "text-slate-300",
+              )}
+            >
+              {isMyTurn
+                ? "YOUR TURN!"
+                : `Waiting for ${currentTurnPlayer?.nickname || "opponent"}...`}
+            </h2>
+            <div className="text-slate-500 text-sm">Room: {roomId}</div>
+          </div>
 
-            setTableElement(tableElement => [...tableElement, columnElement]);
-        }
+          {/* Grid */}
+          <div className="grid grid-cols-5 gap-3 bg-slate-800 p-4 rounded-xl shadow-2xl border border-slate-700">
+            {board.map((num, idx) => {
+              const isSelected = selectedNumbers.includes(num);
+              return (
+                <button
+                  key={idx}
+                  disabled={!isMyTurn || isSelected}
+                  onClick={() => handleSelect(num)}
+                  className={clsx(
+                    "w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center text-xl font-bold rounded-lg transition-all transform",
+                    isSelected
+                      ? "bg-gradient-to-br from-green-500 to-emerald-700 text-white shadow-inner scale-95"
+                      : isMyTurn
+                        ? "bg-slate-700 hover:bg-cyan-600 hover:scale-105 cursor-pointer text-white shadow-lg border border-slate-600 hover:border-cyan-400"
+                        : "bg-slate-700 text-slate-400 cursor-not-allowed border border-slate-700",
+                  )}
+                >
+                  {num}
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
-        // setTotalTableElement(counter - 1);
-        setTotalTableElement(2);
-    }, []);
+        {/* Sidebar Info */}
+        <div className="space-y-6">
+          {/* Players Status */}
+          <div className="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-lg">
+            <h3 className="text-lg font-semibold mb-4 text-slate-300 border-b border-slate-700 pb-2">
+              Players
+            </h3>
+            <ul className="space-y-2">
+              {players.map((p) => (
+                <li
+                  key={p.id}
+                  className={clsx(
+                    "flex items-center justify-between p-2 rounded",
+                    p.id === turnPlayerId
+                      ? "bg-slate-700 ring-1 ring-cyan-500"
+                      : "",
+                  )}
+                >
+                  <span
+                    className={
+                      p.id === myId
+                        ? "text-cyan-400 font-bold"
+                        : "text-slate-300"
+                    }
+                  >
+                    {p.nickname} {p.id === myId && "(You)"}
+                  </span>
+                  {p.id === turnPlayerId && (
+                    <span className="text-xs text-cyan-500 font-mono animate-pulse">
+                      THINKING
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
 
-    useEffect(() => {
-        console.log('Game Reset Setting:', props.gameReset);
-        if (props.gameReset !== false) {
-            setTableElement([]);
-            setChooseNumberArray([]);
-            setTotalTableElement(0);
-
-            props.gameResetFunction();
-            console.log('Game has resetted');
-        }
-        if (props.chooseNumber !== undefined && !chooseNumberArray.includes(props.chooseNumber)) {
-            setChooseNumberArray(chooseNumberArray => [...chooseNumberArray, props.chooseNumber]);
-        }
-
-        // Check if all the elements are selected
-        let selectedElement = 0;
-        if (tableElement.length > 0) {
-            for (let i = 0; i < 3; i++) {
-                for (let j = 0; j < 3; j++) {
-                    if (tableElement[i][j].selected) {
-                        selectedElement += 1;
-                    }   
-                }
-            }
-        }
-
-        // console.log(selectedElement, totalTableElement);
-        if (selectedElement != 0 && totalTableElement != 0 && selectedElement === totalTableElement) {
-            props.gameOver(props.username);
-        }
-    });
-
-    const numberCheck = (i: number, j: number, data: tableElementMap): string => {
-        if (chooseNumberArray.includes(data.value)) {
-            tableElement[i][j].selected = true;
-            return 'red'
-        } else {
-            return 'white';
-        }
-    };
-    const enableEdit = (i: number, j: number) => {
-        if (!props.gameStart) {
-            let tableElementUpdate = [...tableElement];
-            tableElementUpdate[i][j].toggleEdit = true;
-    
-            setTableElement(tableElementUpdate);
-        }
-    };
-    const saveNumber = (i: number, j: number, number: string) => {
-        let tableElementUpdate = [...tableElement];
-        tableElementUpdate[i][j].toggleEdit = false;
-        tableElementUpdate[i][j].value = number;
-        setTableElement(tableElementUpdate);
-    };
-    const inputElement = (i: number, j: number) => {
-        let number: string;
-
-        return (
-            <div>
-                <input 
-                    type="text" 
-                    name="selectNumber" 
-                    id="selectNumber" 
-                    placeholder="Enter a new number" 
-                    onChange={(event) => {number = event.target.value}}/>
-                <button onClick={() => {saveNumber(i, j, number)}}>Save</button>
+          {/* History Logs */}
+          <div className="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-lg h-64 overflow-hidden flex flex-col">
+            <h3 className="text-lg font-semibold mb-2 text-slate-300 border-b border-slate-700 pb-2">
+              Call History
+            </h3>
+            <div className="flex-1 overflow-y-auto space-y-1 pr-2 custom-scrollbar">
+              {[...selectedNumbers].reverse().map((num, i) => (
+                <div
+                  key={num}
+                  className="text-sm text-slate-400 flex justify-between"
+                >
+                  <span>Turn {selectedNumbers.length - i}</span>
+                  <span className="font-mono text-cyan-400 font-bold text-lg">
+                    {num}
+                  </span>
+                </div>
+              ))}
+              {selectedNumbers.length === 0 && (
+                <div className="text-slate-600 text-center italic mt-10">
+                  No numbers called yet
+                </div>
+              )}
             </div>
-        );
-    };
-    return (
-        <main className="gameboard-container">
-
-            <table>
-                <tbody>
-                    {tableElement.map((column: any, i: number) => (
-                        <tr key={i}>
-                            {column.map((item: tableElementMap, j: number) => (
-                                <td key={item.index}> 
-                                    <div
-                                        onClick={() => (enableEdit(i, j))} 
-                                        id={String(item.index)}
-                                        style={{backgroundColor: numberCheck(i, j, item)}}
-                                    >{item.toggleEdit ? null : item.value}</div>
-                                    <div>{item.toggleEdit ? inputElement(i, j) : null}</div>
-                                </td>
-                            ))}
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-
-        </main>
-    );
-}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default GameBoard;
