@@ -8,6 +8,7 @@ export interface RoomDoc {
   roomName: string;
   password?: string | null;
   gridSize: number;
+  playerCount: number;
   winPattern: string | string[];
   status: RoomStatus;
   turnIndex: number;

@@ -22,6 +22,20 @@ export default function Home() {
     });
   }, []);
 
+  // Cleanup effect: Leave room if tab is closed or component unmounts
+  useEffect(() => {
+    const handleUnload = () => {
+      if (roomId && playerId) {
+        // Best-effort attempt to leave
+        leaveRoomSimple(roomId, playerId);
+      }
+    };
+    window.addEventListener("beforeunload", handleUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleUnload);
+    };
+  }, [roomId, playerId]);
+
   const handleRoomJoined = (id: string, pid: string) => {
     setRoomId(id);
     setPlayerId(pid);
@@ -119,6 +133,12 @@ export default function Home() {
               roomId={room.roomId}
               gridSize={room.gridSize}
             />
+            <button 
+              onClick={handleLeaveRoom}
+              className="fixed bottom-6 right-6 px-4 py-2 bg-slate-800/50 hover:bg-red-900/40 text-slate-400 hover:text-red-400 rounded-lg text-xs font-bold transition-all border border-slate-700 hover:border-red-500/50 backdrop-blur-sm shadow-xl z-50"
+            >
+              LEAVE GAME
+            </button>
           </motion.div>
         )}
         
