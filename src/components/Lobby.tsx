@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { createRoom, joinRoom, getWaitingRooms } from "../lib/firebase/roomService";
+import { createRoom, joinRoom, getWaitingRooms, subscribeToWaitingRooms } from "../lib/firebase/roomService";
 import { RoomDoc } from "../lib/firebase/types";
 import { getPersistentPlayerId } from "../lib/utils/identity";
 import clsx from "clsx";
@@ -37,9 +37,12 @@ const Lobby: React.FC<LobbyProps> = ({ onRoomJoined }) => {
   };
 
   useEffect(() => {
-    fetchRooms();
-    const interval = setInterval(fetchRooms, 15000); // Auto-refresh every 15s
-    return () => clearInterval(interval);
+    // Use real-time subscription
+    const unsubscribe = subscribeToWaitingRooms((updatedRooms) => {
+      setRooms(updatedRooms);
+    });
+    
+    return () => unsubscribe();
   }, []);
 
   const handleCreate = async (e: React.FormEvent) => {

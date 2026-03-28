@@ -11,7 +11,8 @@ import {
   runTransaction,
   limit,
   increment,
-  getDoc
+  getDoc,
+  onSnapshot
 } from "firebase/firestore";
 import { db } from "./config";
 import { RoomDoc, PlayerDoc, RoomStatus } from "./types";
@@ -101,17 +102,36 @@ export const joinRoom = async (roomId: string, nickname: string, password?: stri
 
 export const getWaitingRooms = async (): Promise<RoomDoc[]> => {
   const roomsRef = collection(db, "rooms");
-  // Filter for rooms that are waiting AND have at least one player
-  const q = query(roomsRef, where("status", "==", "waiting"), where("playerCount", ">", 0));
+  // Filter for rooms that are waiting. Removing playerCount > 0 to simplify query and avoid index requirement.
+  const q = query(roomsRef, where("status", "==", "waiting"));
   const querySnapshot = await getDocs(q);
   
-  const rooms = querySnapshot.docs.map(doc => ({ ...doc.data(), roomId: doc.id } as RoomDoc));
+  const rooms = querySnapshot.docs
+    .map(doc => ({ ...doc.data(), roomId: doc.id } as RoomDoc))
+    .filter(room => room.playerCount > 0); // Filter in-memory
   
   // Sort in-memory to avoid composite index requirement
   return rooms.sort((a, b) => {
     const timeA = a.createdAt instanceof Timestamp ? a.createdAt.toMillis() : new Date(a.createdAt).getTime();
     const timeB = b.createdAt instanceof Timestamp ? b.createdAt.toMillis() : new Date(b.createdAt).getTime();
     return timeB - timeA;
+  });
+};
+
+export const subscribeToWaitingRooms = (callback: (rooms: RoomDoc[]) => void) => {
+  const roomsRef = collection(db, "rooms");
+  const q = query(roomsRef, where("status", "==", "waiting"));
+  
+  return onSnapshot(q, (snapshot) => {
+    const rooms = snapshot.docs
+      .map(doc => ({ ...doc.data(), roomId: doc.id } as RoomDoc))
+      .filter(room => room.playerCount > 0)
+      .sort((a, b) => {
+        const timeA = a.createdAt instanceof Timestamp ? a.createdAt.toMillis() : new Date(a.createdAt).getTime();
+        const timeB = b.createdAt instanceof Timestamp ? b.createdAt.toMillis() : new Date(b.createdAt).getTime();
+        return timeB - timeA;
+      });
+    callback(rooms);
   });
 };
 
