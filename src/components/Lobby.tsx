@@ -249,7 +249,7 @@ const Lobby: React.FC<LobbyProps> = ({ onRoomJoined }) => {
                               Grid: {room.gridSize}x{room.gridSize}
                             </span>
                             <span className="text-[10px] text-slate-700 font-medium">
-                              Created {new Date(room.createdAt.toMillis()).toLocaleTimeString()}
+                              Created {new Date(room.createdAt instanceof Date ? room.createdAt : room.createdAt.toMillis()).toLocaleTimeString()}
                             </span>
                           </div>
                         </div>
