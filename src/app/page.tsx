@@ -25,21 +25,42 @@ export default function Home() {
       setMyId(socket.id || "");
     });
 
-    socket.on("player_joined", (payload: any) => {
-      // Payload might be RoomInfo object: { roomId, roomName, players }
-      // Or generic 'players' update.
-      // Assuming payload matches RoomInfo structure or similar
-      console.log("Player Joined:", payload);
+    const handleRoomUpdate = (payload: any) => {
+      console.log("✅ Room Update Received:", payload);
       if (payload.players) {
-        setRoomInfo({ ...payload }); // Update room info
-        // If I just joined and I'm in LOBBY, move to SETUP
+        setRoomInfo({ ...payload });
         setPhase((p) => (p === "LOBBY" ? "SETUP" : p));
+      } else {
+        console.warn("⚠️ Payload missing 'players' property:", payload);
       }
-    });
+    };
 
-    socket.on("game_start", (payload: { turnPlayerId: string }) => {
+    socket.on("room_joined", handleRoomUpdate);
+    socket.on("player_joined", handleRoomUpdate);
+    socket.on("room_players_update", handleRoomUpdate);
+
+    socket.on(
+      "player_status_update",
+      (payload: { socketId: string; isReady: boolean }) => {
+        console.log("Player Status Update:", payload);
+        setRoomInfo((prev) => {
+          if (!prev) return null;
+          return {
+            ...prev,
+            players: prev.players.map((p) =>
+              p.socketId === payload.socketId
+                ? { ...p, isReady: payload.isReady }
+                : p,
+            ),
+          };
+        });
+      },
+    );
+
+    socket.on("game_start", (payload: any) => {
       console.log("Game Start:", payload);
-      setTurnPlayerId(payload.turnPlayerId);
+      // Server sends firstPlayerId, client expects turnPlayerId
+      setTurnPlayerId(payload.firstPlayerId || payload.turnPlayerId);
       setPhase("GAME");
     });
 
@@ -65,7 +86,10 @@ export default function Home() {
 
     return () => {
       socket.off("connect");
+      socket.off("room_joined");
       socket.off("player_joined");
+      socket.off("room_players_update");
+      socket.off("player_status_update");
       socket.off("game_start");
       socket.off("number_selected");
       socket.off("game_over");

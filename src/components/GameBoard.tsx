@@ -22,7 +22,7 @@ const GameBoard: React.FC<GameBoardProps> = ({
 }) => {
   const { socket } = useSocket();
   const isMyTurn = turnPlayerId === myId;
-  const currentTurnPlayer = players.find((p) => p.id === turnPlayerId);
+  const currentTurnPlayer = players.find((p) => p.socketId === turnPlayerId);
 
   const handleSelect = (num: number) => {
     if (!isMyTurn || selectedNumbers.includes(num)) return;
@@ -86,24 +86,24 @@ const GameBoard: React.FC<GameBoardProps> = ({
             <ul className="space-y-2">
               {players.map((p) => (
                 <li
-                  key={p.id}
+                  key={p.socketId}
                   className={clsx(
                     "flex items-center justify-between p-2 rounded",
-                    p.id === turnPlayerId
+                    p.socketId === turnPlayerId
                       ? "bg-slate-700 ring-1 ring-cyan-500"
                       : "",
                   )}
                 >
                   <span
                     className={
-                      p.id === myId
+                      p.socketId === myId
                         ? "text-cyan-400 font-bold"
                         : "text-slate-300"
                     }
                   >
-                    {p.nickname} {p.id === myId && "(You)"}
+                    {p.nickname} {p.socketId === myId && "(You)"}
                   </span>
-                  {p.id === turnPlayerId && (
+                  {p.socketId === turnPlayerId && (
                     <span className="text-xs text-cyan-500 font-mono animate-pulse">
                       THINKING
                     </span>

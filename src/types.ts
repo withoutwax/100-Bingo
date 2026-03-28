@@ -1,5 +1,5 @@
 export interface Player {
-  id: string;
+  socketId: string;
   nickname: string;
   isReady: boolean;
   score?: number; // If needed
@@ -24,4 +24,11 @@ export interface NumberSelectedPayload {
 
 export interface GameOverPayload {
   winnerId: string;
+}
+
+export interface RoomPreview {
+  roomId: string;
+  roomName: string;
+  playerCount: number;
+  maxPlayers?: number;
 }

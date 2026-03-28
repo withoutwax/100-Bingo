@@ -146,16 +146,16 @@ const SetupBoard: React.FC<SetupBoardProps> = ({ players, myId, onReady }) => {
           <ul className="space-y-2">
             {players.map((p) => (
               <li
-                key={p.id}
+                key={p.socketId}
                 className="flex justify-between items-center bg-slate-700/50 p-3 rounded-lg"
               >
                 <span
                   className={clsx(
                     "font-medium",
-                    p.id === myId ? "text-cyan-400" : "text-slate-200",
+                    p.socketId === myId ? "text-cyan-400" : "text-slate-200",
                   )}
                 >
-                  {p.nickname} {p.id === myId && "(You)"}
+                  {p.nickname} {p.socketId === myId && "(You)"}
                 </span>
                 <span
                   className={clsx(
