@@ -195,18 +195,13 @@ export const leaveRoomSimple = async (roomId: string, playerId: string) => {
         transaction.delete(roomRef);
       } else {
         // 3. Decrement player count
-        const updateData: any = { playerCount: newPlayerCount };
+        transaction.update(roomRef, { playerCount: newPlayerCount });
 
         // 4. Reassign host if necessary
         if (roomData.hostId === playerId) {
-          // Note: In a transaction, we can't easily query the next player.
-          // For simplicity, we'll mark it for reassignment or just let the 
-          // next joinRoom/onSnapshot handle the UI logic.
-          // A better way is to fetch the next player outside or accept it as param.
-          // For now, let's just decrement. The next player in the list becomes host in UI.
+           // Reassignment logic could go here if needed, 
+           // but currently handled by UI (first player in list is host)
         }
-        
-        transaction.update(roomRef, updateData);
       }
     }
   });

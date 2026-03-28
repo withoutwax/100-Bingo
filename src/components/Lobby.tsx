@@ -83,9 +83,13 @@ const Lobby: React.FC<LobbyProps> = ({ onRoomJoined }) => {
       await joinRoom(roomId, nickname, password);
       const playerId = getPersistentPlayerId();
       onRoomJoined(roomId, playerId);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Join Room Error:", err);
-      setJoinError(err.message || "Failed to join room");
+      if (err instanceof Error) {
+        setJoinError(err.message);
+      } else {
+        setJoinError("Failed to join room");
+      }
     } finally {
       setLoading(false);
     }

@@ -69,3 +69,12 @@ Firestore의 NoSQL 컬렉션-문서 구조를 기반으로 설계합니다.
 
 - **onSnapshot:** 프론트엔드에서는 `rooms` 문서와 `players` 하위 컬렉션에 `onSnapshot` 리스너를 달아 상태 변화를 실시간으로 화면에 렌더링합니다.
 - **Transaction/Batch:** 턴을 넘기고 숫자를 추가하는 작업(`turnIndex` 업데이트 + `calledNumbers` 추가)은 데이터 무결성을 위해 Firestore Transaction을 사용하여 원자적으로(Atomically) 처리합니다.
+
+## 6. Development Guidelines
+
+### 6.1. Strict TypeScript Usage
+
+- **No `any` Policy:** 프로젝트 전반에서 `any` 타입의 사용을 엄격히 금지합니다. 모든 변수, 함수 매개변수 및 반환 값에는 적절한 인터페이스나 타입을 정의하여 사용해야 합니다.
+- **Explicit Typing:** 타입 추론이 가능하더라도 복잡한 객체나 함수 인터페이스는 가독성과 유지보수를 위해 명시적으로 타입을 선언하는 것을 권장합니다.
+- **Type Safety in Firebase:** Firestore 데이터 모델(RoomDoc, PlayerDoc 등)을 정의하고, `getDocs`나 `onSnapshot` 호출 시 해당 타입을 명확히 캐스팅하여 데이터의 정합성을 보장해야 합니다.
+- **Component Props:** 모든 React 컴포넌트의 `props`는 인터페이스를 통해 정의되어야 합니다.
