@@ -11,13 +11,12 @@ import {
   runTransaction,
   limit
 } from "firebase/firestore";
-import { signInAnonymously } from "firebase/auth";
-import { db, auth } from "./config";
+import { db } from "./config";
 import { RoomDoc, PlayerDoc, RoomStatus } from "./types";
+import { getPersistentPlayerId } from "../utils/identity";
 
 export const signIn = async () => {
-  const userCredential = await signInAnonymously(auth);
-  return userCredential.user;
+  return { uid: getPersistentPlayerId() };
 };
 
 export const createRoom = async (

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createRoom, joinRoom, getWaitingRooms } from "../lib/firebase/roomService";
 import { RoomDoc } from "../lib/firebase/types";
+import { getPersistentPlayerId } from "../lib/utils/identity";
 import clsx from "clsx";
 
 interface LobbyProps {
@@ -41,8 +42,7 @@ const Lobby: React.FC<LobbyProps> = ({ onRoomJoined }) => {
     setLoading(true);
     try {
       const roomId = await createRoom(nickname, roomName);
-      const { auth } = await import("../lib/firebase/config");
-      const playerId = auth.currentUser?.uid || "";
+      const playerId = getPersistentPlayerId();
       onRoomJoined(roomId, playerId);
     } catch (err) {
       console.error("Create Room Error:", err);
@@ -60,8 +60,7 @@ const Lobby: React.FC<LobbyProps> = ({ onRoomJoined }) => {
     setLoading(true);
     try {
       await joinRoom(room.roomId, nickname);
-      const { auth } = await import("../lib/firebase/config");
-      const playerId = auth.currentUser?.uid || "";
+      const playerId = getPersistentPlayerId();
       onRoomJoined(room.roomId, playerId);
     } catch (err) {
       console.error("Join Room Error:", err);
