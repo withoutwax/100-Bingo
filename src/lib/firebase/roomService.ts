@@ -58,7 +58,18 @@ export const createRoom = async (
   return roomId;
 };
 
-export const joinRoom = async (roomId: string, nickname: string) => {
+export const joinRoom = async (roomId: string, nickname: string, password?: string) => {
+  const roomRef = doc(db, "rooms", roomId);
+  const roomSnap = await getDocs(query(collection(db, "rooms"), where("roomId", "==", roomId), limit(1)));
+  
+  if (roomSnap.empty) throw new Error("Room not found");
+  
+  const roomData = roomSnap.docs[0].data() as RoomDoc;
+  
+  if (roomData.password && roomData.password !== password) {
+    throw new Error("Invalid room password");
+  }
+
   const user = await signIn();
   const playerRef = doc(db, `rooms/${roomId}/players`, user.uid);
   

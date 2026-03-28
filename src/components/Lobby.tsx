@@ -13,9 +13,15 @@ const Lobby: React.FC<LobbyProps> = ({ onRoomJoined }) => {
   const [rooms, setRooms] = useState<RoomDoc[]>([]);
   const [nickname, setNickname] = useState("");
   const [roomName, setRoomName] = useState("");
+  const [roomPassword, setRoomPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
+  
+  // Password prompt state
+  const [joiningRoom, setJoiningRoom] = useState<RoomDoc | null>(null);
+  const [inputPassword, setInputPassword] = useState("");
+  const [joinError, setJoinError] = useState<string | null>(null);
 
   const fetchRooms = async () => {
     setRefreshing(true);
@@ -41,7 +47,7 @@ const Lobby: React.FC<LobbyProps> = ({ onRoomJoined }) => {
 
     setLoading(true);
     try {
-      const roomId = await createRoom(nickname, roomName);
+      const roomId = await createRoom(nickname, roomName, 5, roomPassword || null);
       const playerId = getPersistentPlayerId();
       onRoomJoined(roomId, playerId);
     } catch (err) {
@@ -51,19 +57,31 @@ const Lobby: React.FC<LobbyProps> = ({ onRoomJoined }) => {
     }
   };
 
-  const handleJoin = async (room: RoomDoc) => {
+  const handleJoinAttempt = (room: RoomDoc) => {
     if (!nickname) {
       alert("Please enter a nickname first!");
       return;
     }
 
+    if (room.password) {
+      setJoiningRoom(room);
+      setInputPassword("");
+      setJoinError(null);
+    } else {
+      performJoin(room.roomId);
+    }
+  };
+
+  const performJoin = async (roomId: string, password?: string) => {
     setLoading(true);
+    setJoinError(null);
     try {
-      await joinRoom(room.roomId, nickname);
+      await joinRoom(roomId, nickname, password);
       const playerId = getPersistentPlayerId();
-      onRoomJoined(room.roomId, playerId);
-    } catch (err) {
+      onRoomJoined(roomId, playerId);
+    } catch (err: any) {
       console.error("Join Room Error:", err);
+      setJoinError(err.message || "Failed to join room");
     } finally {
       setLoading(false);
     }
@@ -134,21 +152,35 @@ const Lobby: React.FC<LobbyProps> = ({ onRoomJoined }) => {
                   animate={{ height: "auto", opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
                   onSubmit={handleCreate}
-                  className="bg-cyan-600 p-8 rounded-[2.5rem] shadow-2xl overflow-hidden"
+                  className="bg-cyan-600 p-8 rounded-[2.5rem] shadow-2xl overflow-hidden space-y-4"
                 >
-                  <label className="block text-[10px] font-black text-white/60 uppercase tracking-widest mb-3">Room Secret Name</label>
-                  <input
-                    type="text"
-                    placeholder="BATTLE ZONE #1"
-                    value={roomName}
-                    onChange={(e) => setRoomName(e.target.value)}
-                    required
-                    className="w-full bg-white/20 border-2 border-white/20 placeholder:text-white/40 focus:bg-white/30 rounded-2xl p-4 font-black transition-all outline-none text-white mb-4"
-                  />
+                  <div>
+                    <label className="block text-[10px] font-black text-white/60 uppercase tracking-widest mb-2 ml-1">Room Secret Name</label>
+                    <input
+                      type="text"
+                      placeholder="BATTLE ZONE #1"
+                      value={roomName}
+                      onChange={(e) => setRoomName(e.target.value)}
+                      required
+                      className="w-full bg-white/20 border-2 border-white/20 placeholder:text-white/40 focus:bg-white/30 rounded-2xl p-4 font-black transition-all outline-none text-white"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-[10px] font-black text-white/60 uppercase tracking-widest mb-2 ml-1">Optional Password</label>
+                    <input
+                      type="password"
+                      placeholder="SECRET KEY"
+                      value={roomPassword}
+                      onChange={(e) => setRoomPassword(e.target.value)}
+                      className="w-full bg-white/20 border-2 border-white/20 placeholder:text-white/40 focus:bg-white/30 rounded-2xl p-4 font-black transition-all outline-none text-white"
+                    />
+                  </div>
+
                   <button
                     type="submit"
                     disabled={loading || !roomName || !nickname}
-                    className="w-full py-4 bg-white text-cyan-600 rounded-2xl font-black transition-all disabled:opacity-50 active:scale-95 shadow-xl"
+                    className="w-full py-4 bg-white text-cyan-600 rounded-2xl font-black transition-all disabled:opacity-50 active:scale-95 shadow-xl mt-2"
                   >
                     DEPLOY ROOM
                   </button>
@@ -180,7 +212,16 @@ const Lobby: React.FC<LobbyProps> = ({ onRoomJoined }) => {
                         className="group flex flex-col md:flex-row items-center justify-between p-6 bg-slate-900/50 rounded-[2rem] border border-slate-800 hover:border-cyan-500/50 transition-all hover:bg-slate-900/80 shadow-lg"
                       >
                         <div className="flex flex-col mb-4 md:mb-0 text-center md:text-left">
-                          <span className="text-xl font-black tracking-tight group-hover:text-cyan-400 transition-colors uppercase">{room.roomName || 'Unnamed Unit'}</span>
+                          <div className="flex items-center gap-2 justify-center md:justify-start">
+                            <span className="text-xl font-black tracking-tight group-hover:text-cyan-400 transition-colors uppercase">{room.roomName || 'Unnamed Unit'}</span>
+                            {room.password && (
+                              <div className="w-4 h-4 text-slate-500 group-hover:text-cyan-500 transition-colors">
+                                <svg fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                  <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                                </svg>
+                              </div>
+                            )}
+                          </div>
                           <div className="flex items-center gap-2 mt-2 justify-center md:justify-start">
                             <span className="text-[10px] text-slate-600 font-bold uppercase tracking-widest bg-slate-800 px-2 py-0.5 rounded">
                               Grid: {room.gridSize}x{room.gridSize}
@@ -191,7 +232,7 @@ const Lobby: React.FC<LobbyProps> = ({ onRoomJoined }) => {
                           </div>
                         </div>
                         <button
-                          onClick={() => handleJoin(room)}
+                          onClick={() => handleJoinAttempt(room)}
                           disabled={loading}
                           className="px-8 py-3 bg-slate-800 hover:bg-cyan-600 text-white rounded-2xl font-black transition-all group-hover:shadow-[0_0_30px_rgba(6,182,212,0.3)] border border-slate-700 group-hover:border-cyan-400 active:scale-95"
                         >
@@ -216,6 +257,67 @@ const Lobby: React.FC<LobbyProps> = ({ onRoomJoined }) => {
           </div>
         </div>
       </motion.div>
+
+      {/* Password Modal */}
+      <AnimatePresence>
+        {joiningRoom && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-slate-950/80 backdrop-blur-sm"
+          >
+            <motion.div 
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="w-full max-w-md bg-slate-900 border border-slate-700 rounded-[2.5rem] p-10 shadow-2xl"
+            >
+              <div className="text-center mb-8">
+                <div className="w-16 h-16 bg-cyan-500/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-cyan-500/20">
+                  <svg className="w-8 h-8 text-cyan-500" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                    <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <h3 className="text-2xl font-black uppercase italic tracking-tighter">Secured Unit</h3>
+                <p className="text-slate-500 text-sm mt-2">Enter the key to join <span className="text-cyan-500 font-bold">{joiningRoom.roomName}</span></p>
+              </div>
+
+              <div className="space-y-4">
+                <input
+                  type="password"
+                  autoFocus
+                  placeholder="PASSWORD"
+                  value={inputPassword}
+                  onChange={(e) => setInputPassword(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && performJoin(joiningRoom.roomId, inputPassword)}
+                  className="w-full bg-slate-800 border-2 border-slate-700 focus:border-cyan-500 rounded-2xl p-4 text-center font-black tracking-tight outline-none"
+                />
+                
+                {joinError && (
+                  <p className="text-red-400 text-xs font-bold text-center uppercase tracking-widest">{joinError}</p>
+                )}
+
+                <div className="grid grid-cols-2 gap-4 mt-4">
+                  <button
+                    onClick={() => setJoiningRoom(null)}
+                    className="py-4 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded-2xl font-black transition-all"
+                  >
+                    ABORT
+                  </button>
+                  <button
+                    onClick={() => performJoin(joiningRoom.roomId, inputPassword)}
+                    disabled={loading || !inputPassword}
+                    className="py-4 bg-cyan-600 hover:bg-cyan-500 text-white rounded-2xl font-black transition-all shadow-lg shadow-cyan-900/20 disabled:opacity-50"
+                  >
+                    {loading ? "VERIFYING..." : "DEPLOY"}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
