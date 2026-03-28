@@ -1,175 +1,151 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useSocket } from "../context/SocketContext";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import Lobby from "../components/Lobby";
 import SetupBoard from "../components/SetupBoard";
 import GameBoard from "../components/GameBoard";
-import { GamePhase, RoomInfo } from "../types";
+import { GamePhase } from "../types";
+import { useRoomState } from "../hooks/useRoomState";
+import { signIn, leaveRoomSimple } from "../lib/firebase/roomService";
 
 export default function Home() {
-  const { socket, connected } = useSocket();
-  const [phase, setPhase] = useState<GamePhase>("LOBBY");
-  const [myId, setMyId] = useState<string>("");
-  const [roomInfo, setRoomInfo] = useState<RoomInfo | null>(null);
-  const [board, setBoard] = useState<number[]>([]); // My board
-  const [selectedNumbers, setSelectedNumbers] = useState<number[]>([]);
-  const [turnPlayerId, setTurnPlayerId] = useState<string>("");
-  const [winner, setWinner] = useState<string | null>(null);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [roomId, setRoomId] = useState<string | null>(null);
+  const [playerId, setPlayerId] = useState<string | null>(null);
+  const [board, setBoard] = useState<number[]>([]);
+  
+  const { room, players, loading, error } = useRoomState(roomId);
 
   useEffect(() => {
-    if (!socket) return;
-
-    socket.on("connect", () => {
-      setMyId(socket.id || "");
+    signIn().then((user) => {
+      setPlayerId(user.uid);
     });
+  }, []);
 
-    const handleRoomUpdate = (payload: any) => {
-      console.log("✅ Room Update Received:", payload);
-      if (payload.players) {
-        setRoomInfo({ ...payload });
-        setPhase((p) => (p === "LOBBY" ? "SETUP" : p));
-      } else {
-        console.warn("⚠️ Payload missing 'players' property:", payload);
-      }
-    };
+  const handleRoomJoined = (id: string, pid: string) => {
+    setRoomId(id);
+    setPlayerId(pid);
+  };
 
-    socket.on("room_joined", handleRoomUpdate);
-    socket.on("player_joined", handleRoomUpdate);
-    socket.on("room_players_update", handleRoomUpdate);
-
-    socket.on(
-      "player_status_update",
-      (payload: { socketId: string; isReady: boolean }) => {
-        console.log("Player Status Update:", payload);
-        setRoomInfo((prev) => {
-          if (!prev) return null;
-          return {
-            ...prev,
-            players: prev.players.map((p) =>
-              p.socketId === payload.socketId
-                ? { ...p, isReady: payload.isReady }
-                : p,
-            ),
-          };
-        });
-      },
-    );
-
-    socket.on("game_start", (payload: any) => {
-      console.log("Game Start:", payload);
-      // Server sends firstPlayerId, client expects turnPlayerId
-      setTurnPlayerId(payload.firstPlayerId || payload.turnPlayerId);
-      setPhase("GAME");
-    });
-
-    socket.on(
-      "number_selected",
-      (payload: { number: number; nextTurnPlayerId: string }) => {
-        console.log("Number Selected:", payload);
-        setSelectedNumbers((prev) => [...prev, payload.number]);
-        setTurnPlayerId(payload.nextTurnPlayerId);
-      },
-    );
-
-    socket.on("game_over", (payload: { winnerId: string }) => {
-      console.log("Game Over:", payload);
-      setWinner(payload.winnerId);
-      // setPhase('Result'); // Or just show modal overlay
-    });
-
-    socket.on("error_message", (msg: string) => {
-      setErrorMsg(msg);
-      setTimeout(() => setErrorMsg(null), 3000);
-    });
-
-    return () => {
-      socket.off("connect");
-      socket.off("room_joined");
-      socket.off("player_joined");
-      socket.off("room_players_update");
-      socket.off("player_status_update");
-      socket.off("game_start");
-      socket.off("number_selected");
-      socket.off("game_over");
-      socket.off("error_message");
-    };
-  }, [socket]);
-
-  // Capture board from Setup component before ready
-  // Actually, SetupBoard emits 'player_ready' with board.
-  // We should also store it locally to pass to GameBoard.
-  // We can just lift the board state up or capture it.
-  // For now, let's assume SetupBoard keeps its own state, but when we transition to Game,
-  // we need the board configuration.
-  // Wait, GameBoard needs `board` prop.
-  // So SetupBoard should either tell App the board, or App should hold the board state.
-  // I will lift board state to App so it persists.
+  const handleLeaveRoom = async () => {
+    if (roomId && playerId) {
+      await leaveRoomSimple(roomId, playerId);
+      setRoomId(null);
+      setBoard([]);
+    }
+  };
 
   const handleBoardReady = (finalBoard: number[]) => {
     setBoard(finalBoard);
-    // NOTE: SetupBoard emits 'player_ready' itself.
   };
 
-  if (!connected) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-slate-900 text-cyan-500 animate-pulse">
-        Connecting to Server...
-      </div>
-    );
+  // Determine current phase based on room status
+  let phase: GamePhase = "LOBBY";
+  if (roomId && room) {
+    if (room.status === "waiting") {
+      phase = "SETUP";
+    } else if (room.status === "playing") {
+      phase = "GAME";
+    } else if (room.status === "finished") {
+      phase = "Result";
+    }
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 font-sans">
+    <div className="min-h-screen bg-slate-900 font-sans text-slate-100 overflow-x-hidden">
       {/* Global Error Toast */}
-      {errorMsg && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 bg-red-600 text-white px-6 py-3 rounded-full shadow-2xl z-50 animate-bounce">
-          {errorMsg}
-        </div>
+      {(error || (roomId && !room && !loading)) && (
+        <motion.div 
+          initial={{ y: -100, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className="fixed top-4 left-1/2 -translate-x-1/2 bg-red-600/90 backdrop-blur-md text-white px-6 py-3 rounded-full shadow-2xl z-50 flex items-center gap-3 border border-red-500/50"
+        >
+          <span className="w-2 h-2 bg-white rounded-full animate-ping" />
+          {error || "Room not found or disconnected"}
+          <button onClick={() => setRoomId(null)} className="ml-2 underline text-xs">Close</button>
+        </motion.div>
       )}
 
-      {/* Winner Modal */}
-      {winner && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 backdrop-blur-sm">
-          <div className="bg-slate-800 p-10 rounded-2xl text-center border border-slate-700 shadow-2xl transform scale-105">
-            <h2 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500 mb-4">
-              GAME OVER
-            </h2>
-            <p className="text-2xl text-white mb-8">
-              {winner === myId ? "🏆 YOU WON! 🏆" : "Better luck next time!"}
-            </p>
-            <button
-              onClick={() => window.location.reload()}
-              className="bg-cyan-600 hover:bg-cyan-500 text-white px-8 py-3 rounded-lg font-bold transition-all shadow-lg hover:shadow-cyan-500/50"
+      <AnimatePresence mode="wait">
+        {phase === "LOBBY" && (
+          <motion.div
+            key="lobby"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+            transition={{ duration: 0.3 }}
+          >
+            <Lobby onRoomJoined={handleRoomJoined} />
+          </motion.div>
+        )}
+
+        {phase === "SETUP" && room && playerId && (
+          <motion.div
+            key="setup"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 1.05 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+          >
+            <SetupBoard
+              players={players}
+              myId={playerId}
+              roomId={room.roomId}
+              onReady={handleBoardReady}
+            />
+            <button 
+              onClick={handleLeaveRoom}
+              className="fixed bottom-6 right-6 px-4 py-2 bg-slate-800/50 hover:bg-red-900/40 text-slate-400 hover:text-red-400 rounded-lg text-xs font-bold transition-all border border-slate-700 hover:border-red-500/50 backdrop-blur-sm shadow-xl"
             >
-              Play Again
+              LEAVE ROOM
             </button>
-          </div>
-        </div>
-      )}
+          </motion.div>
+        )}
 
-      {/* Main Content */}
-      {phase === "LOBBY" && <Lobby />}
-
-      {phase === "SETUP" && roomInfo && (
-        <SetupBoard
-          players={roomInfo.players}
-          myId={myId}
-          onReady={handleBoardReady}
-        />
-      )}
-
-      {phase === "GAME" && roomInfo && (
-        <GameBoard
-          board={board}
-          selectedNumbers={selectedNumbers}
-          turnPlayerId={turnPlayerId}
-          myId={myId}
-          players={roomInfo.players}
-          roomId={roomInfo.roomId}
-        />
-      )}
+        {phase === "GAME" && room && playerId && (
+          <motion.div
+            key="game"
+            initial={{ opacity: 0, filter: "blur(10px)" }}
+            animate={{ opacity: 1, filter: "blur(0px)" }}
+            transition={{ duration: 0.5 }}
+          >
+            <GameBoard
+              board={board}
+              selectedNumbers={room.calledNumbers}
+              turnIndex={room.turnIndex}
+              myId={playerId}
+              players={players}
+              roomId={room.roomId}
+            />
+          </motion.div>
+        )}
+        
+        {phase === "Result" && room && (
+          <motion.div 
+            key="result"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="fixed inset-0 bg-slate-950/90 flex items-center justify-center z-50 backdrop-blur-md"
+          >
+            <motion.div 
+              initial={{ scale: 0.8, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              className="bg-slate-900 p-12 rounded-3xl text-center border border-slate-700 shadow-[0_0_50px_rgba(6,182,212,0.2)] max-w-sm w-full mx-4"
+            >
+              <h2 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-br from-cyan-400 via-blue-500 to-purple-600 mb-6 italic tracking-tighter">
+                FINISH
+              </h2>
+              <p className="text-slate-400 mb-10 text-lg">The game has ended.</p>
+              <button
+                onClick={handleLeaveRoom}
+                className="w-full bg-gradient-to-r from-cyan-600 to-blue-700 hover:from-cyan-500 hover:to-blue-600 text-white py-4 rounded-2xl font-black transition-all shadow-xl hover:shadow-cyan-500/40 transform hover:-translate-y-1 active:translate-y-0"
+              >
+                RETURN TO LOBBY
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

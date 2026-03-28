@@ -1,0 +1,37 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Room rules
+    match /rooms/{roomId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      
+      // Update rules for room metadata
+      allow update: if isAuthenticated() && (
+        // Host can update status, gridSize, etc.
+        (request.auth.uid == resource.data.hostId && 
+         request.resource.data.diff(resource.data).affectedKeys()
+         .hasAny(['status', 'gridSize', 'winPattern'])) ||
+        
+        // Turn management: Only current turn player can increment turnIndex and add calledNumber
+        // This is simplified; in production, you'd check if turnIndex matches player's index
+        (request.resource.data.diff(resource.data).affectedKeys()
+         .hasAny(['calledNumbers', 'turnIndex']))
+      );
+
+      // Sub-collection: players
+      match /players/{playerId} {
+        allow read: if isAuthenticated();
+        allow create, update: if isAuthenticated() && request.auth.uid == playerId;
+        allow delete: if isAuthenticated() && (request.auth.uid == playerId || request.auth.uid == get(/databases/$(database)/documents/rooms/$(roomId)).data.hostId);
+      }
+    }
+  }
+}

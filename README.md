@@ -1,44 +1,74 @@
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+# 100 BINGO: Serverless Multiplayer Grid Battle
 
-## Available Scripts
+A real-time, competitive multiplayer Bingo game built with **Next.js 15 (App Router)** and **Firebase Firestore**. This project demonstrates a robust serverless state synchronization layer for low-latency gaming.
 
-In the project directory, you can run:
+## 🏗️ System Architecture
 
-### `yarn start`
+```mermaid
+graph LR
+    subgraph "Frontend (Next.js)"
+        UI["React Components (Lobby, Setup, Game)"]
+        Hook["useRoomState (Real-time Sync)"]
+        Service["roomService (Firestore Ops)"]
+    end
 
-Runs the app in the development mode.<br />
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+    subgraph "Backend (Firebase)"
+        Auth["Anonymous Auth"]
+        Firestore["Cloud Firestore"]
+        Rules["Security Rules"]
+    end
 
-The page will reload if you make edits.<br />
-You will also see any lint errors in the console.
+    UI --> Hook
+    Hook <--> Firestore
+    Service --> Firestore
+    Service --> Auth
+```
 
-### `yarn test`
+### Key Technical Decisions
+1. **Firestore-as-Source-of-Truth**: Replaced Socket.io with Firestore `onSnapshot` to handle state persistence and real-time synchronization without a dedicated Node.js server.
+2. **Atomic Game Logic**: Every number selection uses **Firestore Transactions** to prevent race conditions during turn rotation.
+3. **Headless TDD**: Core bingo win detection verified with Vitest prior to UI implementation.
+4. **Premium Aesthetics**: Designed with a dark mode glassmorphism aesthetic, powered by Tailwind CSS and Framer Motion for smooth state transitions.
 
-Launches the test runner in the interactive watch mode.<br />
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## 🚀 Features
+- **Real-time Lobby**: Dynamic room listing and creation.
+- **Strategic Setup**: Manual or random 5x5 board configuration.
+- **Multiplayer Battle**: Turn-based selection with live marking across all clients.
+- **Victory Detection**: Automatic bingo win detection with celebratory UI.
+- **Host Migration**: Automatic host reassignment if the original creator leaves.
 
-### `yarn build`
+## 🛠️ Tech Stack
+- **Framework**: Next.js 15 (App Router)
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS
+- **Animation**: Framer Motion
+- **Backend/DB**: Firebase Firestore & Auth
+- **Testing**: Vitest & React Testing Library
 
-Builds the app for production to the `build` folder.<br />
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## 🚦 Getting Started
 
-The build is minified and the filenames include the hashes.<br />
-Your app is ready to be deployed!
+1. **Clone the repository**
+2. **Install dependencies**:
+   ```bash
+   npm install
+   ```
+3. **Configure Environment**:
+   Create a `.env.local` file with your Firebase credentials:
+   ```env
+   NEXT_PUBLIC_FIREBASE_API_KEY=xxx
+   NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=xxx
+   NEXT_PUBLIC_FIREBASE_PROJECT_ID=xxx
+   NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=xxx
+   NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=xxx
+   NEXT_PUBLIC_FIREBASE_APP_ID=xxx
+   ```
+4. **Deploy Security Rules**:
+   Apply the rules from `firestore.rules` to your Firebase project.
+5. **Run Development Server**:
+   ```bash
+   npm run dev
+   ```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-### `yarn eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
-
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
-
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
+## 📜 Specifications
+Detailed project specifications can be found in [docs/SPEC.md](./docs/SPEC.md).
+Development guidelines and rules follow [project-rules.md](./project-rules.md).
