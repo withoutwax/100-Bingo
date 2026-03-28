@@ -14,6 +14,7 @@ const Lobby: React.FC<LobbyProps> = ({ onRoomJoined }) => {
   const [nickname, setNickname] = useState("");
   const [roomName, setRoomName] = useState("");
   const [roomPassword, setRoomPassword] = useState("");
+  const [gridSize, setGridSize] = useState(5);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
@@ -47,7 +48,7 @@ const Lobby: React.FC<LobbyProps> = ({ onRoomJoined }) => {
 
     setLoading(true);
     try {
-      const roomId = await createRoom(nickname, roomName, 5, roomPassword || null);
+      const roomId = await createRoom(nickname, roomName, gridSize, roomPassword || null);
       const playerId = getPersistentPlayerId();
       onRoomJoined(roomId, playerId);
     } catch (err) {
@@ -164,6 +165,27 @@ const Lobby: React.FC<LobbyProps> = ({ onRoomJoined }) => {
                       required
                       className="w-full bg-white/20 border-2 border-white/20 placeholder:text-white/40 focus:bg-white/30 rounded-2xl p-4 font-black transition-all outline-none text-white"
                     />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-black text-white/60 uppercase tracking-widest mb-2 ml-1">Grid Dimension</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[3, 4, 5].map((size) => (
+                        <button
+                          key={size}
+                          type="button"
+                          onClick={() => setGridSize(size)}
+                          className={clsx(
+                            "py-3 rounded-xl font-black transition-all border-2",
+                            gridSize === size 
+                              ? "bg-white text-cyan-600 border-white" 
+                              : "bg-white/10 text-white/60 border-transparent hover:bg-white/20"
+                          )}
+                        >
+                          {size}x{size}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                   
                   <div>

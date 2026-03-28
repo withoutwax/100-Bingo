@@ -12,6 +12,7 @@ interface GameBoardProps {
   myId: string;
   players: PlayerDoc[];
   roomId: string;
+  gridSize: number;
 }
 
 const GameBoard: React.FC<GameBoardProps> = ({
@@ -21,6 +22,7 @@ const GameBoard: React.FC<GameBoardProps> = ({
   myId,
   players,
   roomId,
+  gridSize,
 }) => {
   const playerCount = players.length;
   const isMyTurn = players[turnIndex % playerCount]?.playerId === myId;
@@ -29,10 +31,9 @@ const GameBoard: React.FC<GameBoardProps> = ({
   // Calculate if I have a bingo
   const hasBingo = useMemo(() => {
     if (board.length === 0) return false;
-    const gridSize = Math.sqrt(board.length);
     const marks = board.map(num => selectedNumbers.includes(num));
     return checkBingoWin(marks, gridSize);
-  }, [board, selectedNumbers]);
+  }, [board, selectedNumbers, gridSize]);
 
   // Handle win detection
   useEffect(() => {
@@ -81,12 +82,17 @@ const GameBoard: React.FC<GameBoardProps> = ({
               </motion.h2>
             </AnimatePresence>
             <div className="px-3 py-1 bg-slate-800/80 rounded-full text-[10px] font-mono text-slate-500 border border-slate-700 inline-block uppercase tracking-widest">
-              Room: {roomId}
+              Room: {roomId} ({gridSize}x{gridSize})
             </div>
           </div>
 
           {/* Grid */}
-          <div className="grid grid-cols-5 gap-3 bg-slate-800/40 backdrop-blur-md p-6 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-slate-700/50">
+          <div 
+            className="grid gap-3 bg-slate-800/40 backdrop-blur-md p-6 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-slate-700/50"
+            style={{ 
+              gridTemplateColumns: `repeat(${gridSize}, minmax(0, 1fr))` 
+            }}
+          >
             {board.map((num, idx) => {
               const isSelected = selectedNumbers.includes(num);
               return (

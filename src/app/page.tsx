@@ -91,6 +91,7 @@ export default function Home() {
               players={players}
               myId={playerId}
               roomId={room.roomId}
+              gridSize={room.gridSize}
               onReady={handleBoardReady}
             />
             <button 
@@ -116,6 +117,7 @@ export default function Home() {
               myId={playerId}
               players={players}
               roomId={room.roomId}
+              gridSize={room.gridSize}
             />
           </motion.div>
         )}

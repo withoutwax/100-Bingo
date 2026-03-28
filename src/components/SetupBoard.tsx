@@ -1,18 +1,20 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { PlayerDoc } from "../lib/firebase/types";
-import { updatePlayerBoard, updateRoomStatus, leaveRoomSimple } from "../lib/firebase/roomService";
+import { updatePlayerBoard, updateRoomStatus } from "../lib/firebase/roomService";
 import clsx from "clsx";
 
 interface SetupBoardProps {
   players: PlayerDoc[];
   myId: string;
   roomId: string;
+  gridSize: number;
   onReady: (board: number[]) => void;
 }
 
-const SetupBoard: React.FC<SetupBoardProps> = ({ players, myId, roomId, onReady }) => {
-  const [board, setBoard] = useState<(number | "")[]>(Array(25).fill(""));
+const SetupBoard: React.FC<SetupBoardProps> = ({ players, myId, roomId, gridSize, onReady }) => {
+  const totalCells = gridSize * gridSize;
+  const [board, setBoard] = useState<(number | "")[]>(Array(totalCells).fill(""));
   const [error, setError] = useState<string | null>(null);
   const [isReady, setIsReady] = useState(false);
 
@@ -23,7 +25,7 @@ const SetupBoard: React.FC<SetupBoardProps> = ({ players, myId, roomId, onReady 
   const validateBoard = (currentBoard: (number | "")[]) => {
     const numbers = currentBoard.filter((n) => n !== "") as number[];
     const hasDuplicates = new Set(numbers).size !== numbers.length;
-    const isFull = numbers.length === 25;
+    const isFull = numbers.length === totalCells;
     const outOfRange = numbers.some((n) => n < 1 || n > 100);
 
     if (outOfRange) return "Numbers must be between 1 and 100";
@@ -54,7 +56,7 @@ const SetupBoard: React.FC<SetupBoardProps> = ({ players, myId, roomId, onReady 
       const j = Math.floor(Math.random() * (i + 1));
       [pool[i], pool[j]] = [pool[j], pool[i]];
     }
-    const newBoard = pool.slice(0, 25);
+    const newBoard = pool.slice(0, totalCells);
     setBoard(newBoard);
     setError(null);
   };
@@ -101,7 +103,7 @@ const SetupBoard: React.FC<SetupBoardProps> = ({ players, myId, roomId, onReady 
               <h2 className="text-3xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400">
                 Setup Board
               </h2>
-              <p className="text-slate-500 text-xs mt-1 uppercase tracking-widest font-bold">Configure your 5x5 grid</p>
+              <p className="text-slate-500 text-xs mt-1 uppercase tracking-widest font-bold">Configure your {gridSize}x{gridSize} grid</p>
             </div>
             <div className="flex gap-2">
               <button
@@ -126,7 +128,12 @@ const SetupBoard: React.FC<SetupBoardProps> = ({ players, myId, roomId, onReady 
             </div>
           </div>
 
-          <div className="grid grid-cols-5 gap-3 mb-8">
+          <div 
+            className="grid gap-3 mb-8"
+            style={{ 
+              gridTemplateColumns: `repeat(${gridSize}, minmax(0, 1fr))` 
+            }}
+          >
             {board.map((cell, idx) => {
               const isDuplicate = cell !== "" && board.filter((v) => v === cell).length > 1;
               const isOutOfRange = typeof cell === "number" && (cell < 1 || cell > 100);
