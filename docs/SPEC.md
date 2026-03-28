@@ -10,6 +10,7 @@
 - **Backend/Database:** Firebase Firestore (Real-time Database)
 - **Authentication:** Firebase Auth (Anonymous Login or Simple Nickname Auth)
 - **Hosting:** Vercel (or Firebase Hosting)
+- **Analytics:** Vercel Analytics, Google Analytics
 
 ## 3. Core Features
 
