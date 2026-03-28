@@ -75,10 +75,13 @@ export const joinRoom = async (roomId: string, nickname: string) => {
 
 export const getWaitingRooms = async (): Promise<RoomDoc[]> => {
   const roomsRef = collection(db, "rooms");
-  const q = query(roomsRef, where("status", "==", "waiting"), orderBy("createdAt", "desc"));
+  const q = query(roomsRef, where("status", "==", "waiting"));
   const querySnapshot = await getDocs(q);
   
-  return querySnapshot.docs.map(doc => ({ ...doc.data(), roomId: doc.id } as RoomDoc));
+  const rooms = querySnapshot.docs.map(doc => ({ ...doc.data(), roomId: doc.id } as RoomDoc));
+  
+  // Sort in-memory to avoid composite index requirement
+  return rooms.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
 };
 
 export const updatePlayerBoard = async (roomId: string, playerId: string, board: number[]) => {
